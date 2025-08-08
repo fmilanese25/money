@@ -8,6 +8,12 @@ cargo run
 ## db
 sudo service postgresql start
 
+createdb -U francesco money
+create database money
+sqlx migrate run
+
+psql -U francesco -d postgres
+
 psql -U francesco -d money
  or
 pgcli -U francesco -d money
@@ -15,27 +21,35 @@ pgcli -U francesco -d money
 select * from users;
 select * from expenses;
 
-sqlx migrate run
-
 ## curl tests
 
--- create a user  
+create a user  
+```
 curl -X POST http://localhost:8080/users \
   -H "Content-Type: application/json" \
   -d '{"name": "alice"}'
-
--- get all users  
+```
+get all users  
+```
 curl http://localhost:8080/users
+```
 
--- create an expense  
+create an expense  
+```
 curl -X POST http://localhost:8080/expenses \
   -H "Content-Type: application/json" \
   -d '{"user_id":1, "date":"2025-08-03", "amount":12345, "category":"food", "message":"lunch", "image_url":null}'
+```
 
--- get all expenses  
+get all expenses  
+```
 curl http://localhost:8080/expenses
+```
 
-## Tech Stack
+## test
+cargo test
+
+## tech stack
 
 - Rust
 - PostgreSQL

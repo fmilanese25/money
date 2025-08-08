@@ -36,3 +36,22 @@ pub async fn create_expense(
 
     HttpResponse::Ok().json(expense)
 }
+
+pub async fn delete_expense(
+    pool: web::Data<PgPool>,
+    id: web::Path<i32>,
+) -> impl Responder {
+    let expense_id = id.into_inner();
+    let result = sqlx::query!("delete from expenses where id = $1", expense_id)
+        .execute(pool.get_ref())
+        .await;
+
+    match result {
+        Ok(r) if r.rows_affected() > 0 => HttpResponse::NoContent().finish(),
+        Ok(_) => HttpResponse::NotFound().body("expense not found"),
+        Err(e) => {
+            eprintln!("failed to delete expense: {:?}", e);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
