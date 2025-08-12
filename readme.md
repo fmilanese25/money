@@ -15,7 +15,6 @@ sqlx migrate run
 psql -U francesco -d postgres
 
 psql -U francesco -d money
- or
 pgcli -U francesco -d money
 
 select * from users;
@@ -48,6 +47,9 @@ curl http://localhost:8080/expenses
 
 ## test
 cargo test
+
+## format
+cargo fmt
 
 ## tech stack
 

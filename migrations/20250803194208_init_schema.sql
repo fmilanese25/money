@@ -7,7 +7,7 @@ create table expenses (
     id serial primary key,
     user_id integer not null references users(id) on delete cascade,
     date date not null,
-    amount bigint not null,
+    amount integer not null,
     category text not null,
     message text,
     image_url text
