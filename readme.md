@@ -20,6 +20,10 @@ pgcli -U francesco -d money
 select * from users;
 select * from expenses;
 
+drop database money;
+create database money;
+sqlx migrate run
+
 ## curl tests
 
 create a user  
