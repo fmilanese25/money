@@ -8,10 +8,9 @@ pub async fn create_expense(
 ) -> impl Responder {
   let expense = sqlx::query_as!(
     Expense,
-    "insert into expenses (user_id, date, amount, category, message, image_url)
-         values ($1, $2, $3, $4, $5, $6)
-         returning id, user_id, date, amount, category, message, image_url",
-    payload.user_id,
+    "insert into expenses (date, amount, category, message, image_url)
+         values ($1, $2, $3, $4, $5)
+         returning id, date, amount, category, message, image_url",
     payload.date,
     payload.amount,
     payload.category,
@@ -25,16 +24,10 @@ pub async fn create_expense(
   HttpResponse::Ok().json(expense)
 }
 
-pub async fn get_expenses(
-  pool: web::Data<PgPool>,
-  user_id: web::Path<i32>,
-) -> impl Responder {
+pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
   let expenses = sqlx::query_as!(
     Expense,
-    "select id, user_id, date, amount, category, message, image_url 
-       from expenses 
-       where user_id = $1",
-    *user_id
+    "select id, date, amount, category, message, image_url from expenses"
   )
   .fetch_all(pool.get_ref())
   .await
@@ -48,21 +41,20 @@ pub async fn get_expense(
   expense_id: web::Path<i32>,
 ) -> impl Responder {
   let expense = sqlx::query_as!(
-    Expense,
-    "select id, user_id, date, amount, category, message, image_url 
-       from expenses 
-       where id = $1",
-    *expense_id
-  )
-  .fetch_optional(pool.get_ref()) // optional so it won't panic if not found
-  .await
-  .unwrap();
+        Expense,
+        "select id, date, amount, category, message, image_url from expenses where id = $1",
+        *expense_id
+    )
+    .fetch_optional(pool.get_ref())
+    .await
+    .unwrap();
 
   match expense {
     Some(e) => HttpResponse::Ok().json(e),
     None => HttpResponse::NotFound().finish(),
   }
 }
+
 pub async fn update_expense(
   pool: web::Data<PgPool>,
   id_path: web::Path<i32>,
@@ -71,18 +63,19 @@ pub async fn update_expense(
   let id = id_path.into_inner();
 
   let result = sqlx::query_as!(
-      Expense,
-      "update expenses set user_id = $1, date = $2, amount = $3, category = $4, message = $5, image_url = $6 where id = $7 returning id, user_id, date, amount, category, message, image_url",
-      payload.user_id,
-      payload.date,
-      payload.amount,
-      payload.category,
-      payload.message,
-      payload.image_url,
-      id
-  )
-  .fetch_optional(pool.get_ref())
-  .await;
+        Expense,
+        "update expenses set date = $1, amount = $2, category = $3, message = $4, image_url = $5
+         where id = $6
+         returning id, date, amount, category, message, image_url",
+        payload.date,
+        payload.amount,
+        payload.category,
+        payload.message,
+        payload.image_url,
+        id
+    )
+    .fetch_optional(pool.get_ref())
+    .await;
 
   match result {
     Ok(Some(expense)) => HttpResponse::Ok().json(expense),

@@ -17,7 +17,6 @@ psql -U francesco -d postgres
 psql -U francesco -d money
 pgcli -U francesco -d money
 
-select * from users;
 select * from expenses;
 
 drop database money;
@@ -26,22 +25,11 @@ sqlx migrate run
 
 ## curl tests
 
-create a user  
-```
-curl -X POST http://localhost:8080/users \
-  -H "Content-Type: application/json" \
-  -d '{"name": "alice"}'
-```
-get all users  
-```
-curl http://localhost:8080/users
-```
-
 create an expense  
 ```
 curl -X POST http://localhost:8080/expenses \
   -H "Content-Type: application/json" \
-  -d '{"user_id":1, "date":"2025-08-03", "amount":12345, "category":"food", "message":"lunch", "image_url":null}'
+  -d '{"date":"2025-08-03", "amount":12345, "category":"food", "message":"lunch", "image_url":null}'
 ```
 
 get all expenses  
