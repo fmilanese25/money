@@ -8,14 +8,16 @@ pub async fn create_expense(
 ) -> impl Responder {
   let expense = sqlx::query_as!(
     Expense,
-    "insert into expenses (date, amount, category, message, image_url)
-         values ($1, $2, $3, $4, $5)
-         returning id, date, amount, category, message, image_url",
+    "insert into expenses (date, amount, category, message, image_url, longitude, latitude)
+     values ($1, $2, $3, $4, $5, $6, $7)
+     returning id, date, amount, category, message, image_url, longitude, latitude",
     payload.date,
     payload.amount,
     payload.category,
     payload.message,
-    payload.image_url
+    payload.image_url,
+    payload.longitude,
+    payload.latitude,
   )
   .fetch_one(pool.get_ref())
   .await
@@ -27,7 +29,8 @@ pub async fn create_expense(
 pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
   let expenses = sqlx::query_as!(
     Expense,
-    "select id, date, amount, category, message, image_url from expenses"
+    "select id, date, amount, category, message, image_url, longitude, latitude
+     from expenses"
   )
   .fetch_all(pool.get_ref())
   .await
@@ -40,14 +43,17 @@ pub async fn get_expense(
   pool: web::Data<PgPool>,
   expense_id: web::Path<i32>,
 ) -> impl Responder {
+  let expense_id = expense_id.into_inner();
+
   let expense = sqlx::query_as!(
-        Expense,
-        "select id, date, amount, category, message, image_url from expenses where id = $1",
-        *expense_id
-    )
-    .fetch_optional(pool.get_ref())
-    .await
-    .unwrap();
+    Expense,
+    "select id, date, amount, category, message, image_url, position, longitude, latitude
+     from expenses where id = $1",
+    expense_id
+  )
+  .fetch_optional(pool.get_ref())
+  .await
+  .unwrap();
 
   match expense {
     Some(e) => HttpResponse::Ok().json(e),
@@ -60,19 +66,21 @@ pub async fn update_expense(
   id_path: web::Path<i32>,
   payload: web::Json<CreateExpense>,
 ) -> impl Responder {
-  let id = id_path.into_inner();
+  let espense_id = id_path.into_inner();
 
   let result = sqlx::query_as!(
         Expense,
-        "update expenses set date = $1, amount = $2, category = $3, message = $4, image_url = $5
-         where id = $6
-         returning id, date, amount, category, message, image_url",
+        "update expenses set date = $2, amount = $3, category = $4, message = $5, image_url = $6, longitude = $7, latitude = $8
+         where id = $1
+         returning id, date, amount, category, message, image_url, longitude, latitude",
+        expense_id
         payload.date,
         payload.amount,
         payload.category,
         payload.message,
         payload.image_url,
-        id
+        payload.longitude,
+        payload.latitude,
     )
     .fetch_optional(pool.get_ref())
     .await;

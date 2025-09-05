@@ -29,7 +29,15 @@ create an expense
 ```
 curl -X POST http://localhost:8080/expenses \
   -H "Content-Type: application/json" \
-  -d '{"date":"2025-08-03", "amount":12345, "category":"food", "message":"lunch", "image_url":null}'
+  -d '{
+    "date":"2025-08-03",
+    "amount":12345,
+    "category":"food",
+    "message":"lunch",
+    "image_url":null,
+    "latitude":41.9028,
+    "longitude":12.4964
+  }'
 ```
 
 get all expenses  
