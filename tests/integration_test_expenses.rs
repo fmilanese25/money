@@ -2,7 +2,7 @@ use reqwest::Client;
 use serde_json::json;
 
 #[actix_rt::test]
-async fn integration_test_expenses() {
+async fn expense_crud() {
   let client = Client::new();
 
   // create expense
@@ -13,7 +13,9 @@ async fn integration_test_expenses() {
         "amount": 12345,
         "category": "food",
         "message": "lunch",
-        "image_url": null
+        "image_url": null,
+        "longitude": 9.19,
+        "latitude": 45.4642
     }))
     .send()
     .await
@@ -21,10 +23,22 @@ async fn integration_test_expenses() {
   assert!(create_expense.status().is_success());
 
   let expense: serde_json::Value = create_expense.json().await.unwrap();
-  assert_eq!(expense["category"], "food");
+  assert_eq!(expense["date"], "2025-08-03");
   assert_eq!(expense["amount"], 12345);
+  assert_eq!(expense["category"], "food");
+  assert_eq!(expense["message"], "lunch");
+  assert!(expense["image_url"].is_null());
+  assert_eq!(expense["longitude"].as_f64().unwrap(), 9.19);
+  assert_eq!(expense["latitude"].as_f64().unwrap(), 45.4642);
 
   let expense_id = expense["id"].as_i64().unwrap();
+
+  // get all expenses
+  let get_all =
+    client.get("http://localhost:8080/expenses").send().await.unwrap();
+  assert!(get_all.status().is_success());
+  let expenses: Vec<serde_json::Value> = get_all.json().await.unwrap();
+  assert!(expenses.iter().any(|e| e["id"].as_i64().unwrap() == expense_id));
 
   // get the expense
   let get_expense = client
@@ -32,29 +46,44 @@ async fn integration_test_expenses() {
     .send()
     .await
     .unwrap();
+
   assert!(get_expense.status().is_success());
+
   let fetched_expense: serde_json::Value = get_expense.json().await.unwrap();
   assert_eq!(fetched_expense["id"].as_i64().unwrap(), expense_id);
   assert_eq!(fetched_expense["category"], "food");
+  assert_eq!(fetched_expense["amount"].as_i64().unwrap(), 12345);
+  assert_eq!(fetched_expense["date"].as_str().unwrap(), "2025-08-03");
+  assert_eq!(fetched_expense["message"].as_str().unwrap(), "lunch");
+  assert!(fetched_expense["image_url"].is_null());
+  assert_eq!(fetched_expense["longitude"].as_f64().unwrap(), 9.1900); // example
+  assert_eq!(fetched_expense["latitude"].as_f64().unwrap(), 45.4642); // example
 
   // update expense
   let update_expense = client
     .put(&format!("http://localhost:8080/expenses/{}", expense_id))
     .json(&json!({
-        "date": "2025-08-04",
-        "amount": 15000,
-        "category": "dining",
-        "message": "dinner",
-        "image_url": null
+      "date": "2025-08-04",
+      "amount": 15000,
+      "category": "dining",
+      "message": "dinner",
+      "image_url": null,
+      "longitude": 9.1900,
+      "latitude": 45.4642
     }))
     .send()
     .await
     .unwrap();
+
   assert!(update_expense.status().is_success());
+
   let updated_expense: serde_json::Value = update_expense.json().await.unwrap();
+  assert_eq!(updated_expense["date"], "2025-08-04");
   assert_eq!(updated_expense["amount"], 15000);
   assert_eq!(updated_expense["category"], "dining");
   assert_eq!(updated_expense["message"], "dinner");
+  assert_eq!(updated_expense["longitude"], 9.1900);
+  assert_eq!(updated_expense["latitude"], 45.4642);
 
   // delete expense
   let delete_expense = client
@@ -62,5 +91,14 @@ async fn integration_test_expenses() {
     .send()
     .await
     .unwrap();
+
   assert!(delete_expense.status().is_success());
+
+  let get_deleted_expense = client
+    .get(&format!("http://localhost:8080/expenses/{}", expense_id))
+    .send()
+    .await
+    .unwrap();
+
+  assert_eq!(get_deleted_expense.status(), reqwest::StatusCode::NOT_FOUND);
 }

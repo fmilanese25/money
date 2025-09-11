@@ -47,7 +47,7 @@ pub async fn get_expense(
 
   let expense = sqlx::query_as!(
     Expense,
-    "select id, date, amount, category, message, image_url, position, longitude, latitude
+    "select id, date, amount, category, message, image_url, longitude, latitude
      from expenses where id = $1",
     expense_id
   )
@@ -66,14 +66,14 @@ pub async fn update_expense(
   id_path: web::Path<i32>,
   payload: web::Json<CreateExpense>,
 ) -> impl Responder {
-  let espense_id = id_path.into_inner();
+  let expense_id = id_path.into_inner();
 
   let result = sqlx::query_as!(
         Expense,
         "update expenses set date = $2, amount = $3, category = $4, message = $5, image_url = $6, longitude = $7, latitude = $8
          where id = $1
          returning id, date, amount, category, message, image_url, longitude, latitude",
-        expense_id
+        expense_id,
         payload.date,
         payload.amount,
         payload.category,
@@ -87,9 +87,8 @@ pub async fn update_expense(
 
   match result {
     Ok(Some(expense)) => HttpResponse::Ok().json(expense),
-    Ok(None) => {
-      HttpResponse::NotFound().body(format!("expense with id {} not found", id))
-    }
+    Ok(None) => HttpResponse::NotFound()
+      .body(format!("expense with id {} not found", expense_id)),
     Err(e) => {
       eprintln!("failed to update expense: {}", e);
       HttpResponse::InternalServerError().body("failed to update expense")
