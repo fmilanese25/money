@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>money</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 0 10px;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    form input, form select {
+      flex: 1 1 120px;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    form button {
+      padding: 8px 15px;
+      border: none;
+      background: #28a745;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    table th, table td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    table th {
+      background: #007bff;
+      color: white;
+    }
+    button.edit, button.delete {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.edit { background: #ffc107; color: white; }
+    button.delete { background: #dc3545; color: white; }
+  </style>
+</head>
+<body>
+  <h1>money</h1>
+
+  <form id="expense-form">
+    <input type="date" id="date" required>
+    <input type="number" id="amount" placeholder="Amount" required>
+    <input type="text" id="category" placeholder="Category" required>
+    <input type="text" id="message" placeholder="Message">
+    <input type="number" step="0.0001" id="latitude" placeholder="Latitude">
+    <input type="number" step="0.0001" id="longitude" placeholder="Longitude">
+    <button type="submit">add Expense</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>date</th>
+        <th>amount</th>
+        <th>category</th>
+        <th>message</th>
+        <th>lat</th>
+        <th>lon</th>
+        <th>actions</th>
+      </tr>
+    </thead>
+    <tbody id="expenses-tbody">
+      <!-- expenses will appear here -->
+    </tbody>
+  </table>
+
+  <script>
+    const apiUrl = 'http://localhost:8080/expenses';
+    const form = document.getElementById('expense-form');
+    const tbody = document.getElementById('expenses-tbody');
+
+    let editingId = null;
+
+    async function fetchExpenses() {
+      const res = await fetch(apiUrl);
+      const expenses = await res.json();
+      tbody.innerHTML = '';
+      expenses.forEach(exp => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${exp.date}</td>
+          <td>${exp.amount}</td>
+          <td>${exp.category}</td>
+          <td>${exp.message || ''}</td>
+          <td>${exp.latitude || ''}</td>
+          <td>${exp.longitude || ''}</td>
+          <td>
+            <button class="edit" onclick="editExpense(${exp.id})">Edit</button>
+            <button class="delete" onclick="deleteExpense(${exp.id})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function addOrUpdateExpense(e) {
+      e.preventDefault();
+      const expense = {
+        date: document.getElementById('date').value,
+        amount: parseInt(document.getElementById('amount').value),
+        category: document.getElementById('category').value,
+        message: document.getElementById('message').value || null,
+        latitude: parseFloat(document.getElementById('latitude').value) || null,
+        longitude: parseFloat(document.getElementById('longitude').value) || null
+      };
+
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId ? `${apiUrl}/${editingId}` : apiUrl;
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expense)
+      });
+
+      if (res.ok) {
+        editingId = null;
+        form.reset();
+        fetchExpenses();
+      } else {
+        alert('error saving expense');
+      }
+    }
+
+    async function deleteExpense(id) {
+      if (!confirm('are you sure you want to delete this expense?')) return;
+      const res = await fetch(`${apiUrl}/${id}`, { method: 'DELETE' });
+      if (res.ok) fetchExpenses();
+    }
+
+    async function editExpense(id) {
+      const res = await fetch(`${apiUrl}/${id}`);
+      if (!res.ok) return;
+      const exp = await res.json();
+      editingId = id;
+      document.getElementById('date').value = exp.date;
+      document.getElementById('amount').value = exp.amount;
+      document.getElementById('category').value = exp.category;
+      document.getElementById('message').value = exp.message || '';
+      document.getElementById('latitude').value = exp.latitude || '';
+      document.getElementById('longitude').value = exp.longitude || '';
+    }
+
+    form.addEventListener('submit', addOrUpdateExpense);
+
+    fetchExpenses();
+  </script>
+</body>
+</html>
