@@ -5,21 +5,21 @@ use serde::{Deserialize, Serialize};
 pub struct Expense {
   pub id: i32,
   pub date: NaiveDate,
-  pub amount: i32,
+  pub amount: f64,
   pub category: String,
   pub message: Option<String>,
   pub image_url: Option<String>,
-  pub latitude: Option<f64>,
-  pub longitude: Option<f64>,
+  pub latitude: f64,
+  pub longitude: f64,
 }
 
 #[derive(Deserialize)]
 pub struct CreateExpense {
   pub date: NaiveDate,
-  pub amount: i32,
+  pub amount: f64,
   pub category: String,
   pub message: Option<String>,
   pub image_url: Option<String>,
-  pub latitude: Option<f64>,
-  pub longitude: Option<f64>,
+  pub latitude: f64,
+  pub longitude: f64,
 }

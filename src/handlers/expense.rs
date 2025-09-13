@@ -6,13 +6,17 @@ pub async fn create_expense(
   pool: web::Data<PgPool>,
   payload: web::Json<CreateExpense>,
 ) -> impl Responder {
+  let amount_cents: i32 = (payload.amount * 100.0).round() as i32;
+
   let expense = sqlx::query_as!(
     Expense,
-    "insert into expenses (date, amount, category, message, image_url, longitude, latitude)
-     values ($1, $2, $3, $4, $5, $6, $7)
-     returning id, date, amount, category, message, image_url, longitude, latitude",
+    r#"
+    insert into expenses (date, amount, category, message, image_url, longitude, latitude)
+    values ($1, $2, $3, $4, $5, $6, $7)
+    returning id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    "#,
     payload.date,
-    payload.amount,
+    amount_cents,
     payload.category,
     payload.message,
     payload.image_url,
@@ -29,8 +33,10 @@ pub async fn create_expense(
 pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
   let expenses = sqlx::query_as!(
     Expense,
-    "select id, date, amount, category, message, image_url, longitude, latitude
-     from expenses"
+    r#"
+    select id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    from expenses
+    "#
   )
   .fetch_all(pool.get_ref())
   .await
@@ -47,8 +53,11 @@ pub async fn get_expense(
 
   let expense = sqlx::query_as!(
     Expense,
-    "select id, date, amount, category, message, image_url, longitude, latitude
-     from expenses where id = $1",
+    r#"
+    select id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    from expenses 
+    where id = $1
+    "#,
     expense_id
   )
   .fetch_optional(pool.get_ref())
@@ -67,23 +76,27 @@ pub async fn update_expense(
   payload: web::Json<CreateExpense>,
 ) -> impl Responder {
   let expense_id = id_path.into_inner();
+  let amount_cents: i32 = (payload.amount * 100.0).round() as i32;
 
   let result = sqlx::query_as!(
-        Expense,
-        "update expenses set date = $2, amount = $3, category = $4, message = $5, image_url = $6, longitude = $7, latitude = $8
-         where id = $1
-         returning id, date, amount, category, message, image_url, longitude, latitude",
-        expense_id,
-        payload.date,
-        payload.amount,
-        payload.category,
-        payload.message,
-        payload.image_url,
-        payload.longitude,
-        payload.latitude,
-    )
-    .fetch_optional(pool.get_ref())
-    .await;
+    Expense,
+    r#"
+    update expenses 
+    set date = $2, amount = $3, category = $4, message = $5, image_url = $6, longitude = $7, latitude = $8
+    where id = $1
+    returning id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    "#,
+    expense_id,
+    payload.date,
+    amount_cents,
+    payload.category,
+    payload.message,
+    payload.image_url,
+    payload.longitude,
+    payload.latitude,
+  )
+  .fetch_optional(pool.get_ref())
+  .await;
 
   match result {
     Ok(Some(expense)) => HttpResponse::Ok().json(expense),

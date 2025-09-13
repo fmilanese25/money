@@ -24,7 +24,7 @@ async fn expense_crud() {
 
   let expense: serde_json::Value = create_expense.json().await.unwrap();
   assert_eq!(expense["date"], "2025-08-03");
-  assert_eq!(expense["amount"], 12345);
+  assert_eq!(expense["amount"], 123.45);
   assert_eq!(expense["category"], "food");
   assert_eq!(expense["message"], "lunch");
   assert!(expense["image_url"].is_null());
@@ -52,7 +52,7 @@ async fn expense_crud() {
   let fetched_expense: serde_json::Value = get_expense.json().await.unwrap();
   assert_eq!(fetched_expense["id"].as_i64().unwrap(), expense_id);
   assert_eq!(fetched_expense["category"], "food");
-  assert_eq!(fetched_expense["amount"].as_i64().unwrap(), 12345);
+  assert_eq!(fetched_expense["amount"].as_i64().unwrap(), 123.45);
   assert_eq!(fetched_expense["date"].as_str().unwrap(), "2025-08-03");
   assert_eq!(fetched_expense["message"].as_str().unwrap(), "lunch");
   assert!(fetched_expense["image_url"].is_null());
@@ -79,7 +79,7 @@ async fn expense_crud() {
 
   let updated_expense: serde_json::Value = update_expense.json().await.unwrap();
   assert_eq!(updated_expense["date"], "2025-08-04");
-  assert_eq!(updated_expense["amount"], 15000);
+  assert_eq!(updated_expense["amount"], 150.00);
   assert_eq!(updated_expense["category"], "dining");
   assert_eq!(updated_expense["message"], "dinner");
   assert_eq!(updated_expense["longitude"], 9.1900);
