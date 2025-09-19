@@ -13,7 +13,7 @@ pub async fn create_expense(
     r#"
     insert into expenses (date, amount, category, message, image_url, longitude, latitude)
     values ($1, $2, $3, $4, $5, $6, $7)
-    returning id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    returning id, date, amount, category, message, image_url, longitude, latitude
     "#,
     payload.date,
     amount_cents,
@@ -34,7 +34,7 @@ pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
   let expenses = sqlx::query_as!(
     Expense,
     r#"
-    select id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    select id, date, amount, category, message, image_url, longitude, latitude
     from expenses
     "#
   )
@@ -42,7 +42,14 @@ pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
   .await
   .unwrap();
 
-  HttpResponse::Ok().json(expenses)
+  let response: Vec<_> = expenses.into_iter()
+    .map(|e| Expense {
+        amount: e.amount as f64 / 100.0,
+        ..e
+    })
+    .collect();
+
+  HttpResponse::Ok().json(response)
 }
 
 pub async fn get_expense(
@@ -54,7 +61,7 @@ pub async fn get_expense(
   let expense = sqlx::query_as!(
     Expense,
     r#"
-    select id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    select id, date, amount, category, message, image_url, longitude, latitude
     from expenses 
     where id = $1
     "#,
@@ -64,7 +71,13 @@ pub async fn get_expense(
   .await
   .unwrap();
 
-  match expense {
+
+  let response = expense.map(|e| Expense {
+    amount: e.amount as f64 / 100.0,
+    ..e
+  });
+  
+  match response {
     Some(e) => HttpResponse::Ok().json(e),
     None => HttpResponse::NotFound().finish(),
   }
@@ -84,7 +97,7 @@ pub async fn update_expense(
     update expenses 
     set date = $2, amount = $3, category = $4, message = $5, image_url = $6, longitude = $7, latitude = $8
     where id = $1
-    returning id, date, amount::float8 as amount, category, message, image_url, longitude, latitude
+    returning id, date, amount, category, message, image_url, longitude, latitude
     "#,
     expense_id,
     payload.date,

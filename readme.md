@@ -1,5 +1,4 @@
 # money
-
 backend for money app written in rust
 
 ## run
@@ -24,7 +23,6 @@ create database money;
 sqlx migrate run
 
 ## curl tests
-
 create an expense  
 ```
 curl -X POST http://localhost:8080/expenses \
@@ -52,7 +50,6 @@ cargo test
 cargo fmt
 
 ## tech stack
-
 - Rust
 - PostgreSQL
 
