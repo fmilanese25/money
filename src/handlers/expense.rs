@@ -27,7 +27,12 @@ pub async fn create_expense(
   .await
   .unwrap();
 
-  HttpResponse::Ok().json(expense)
+  let response = Expense {
+    amount: expense.amount as f64 / 100.0,
+    ..expense
+  };
+
+  HttpResponse::Ok().json(response)
 }
 
 pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
@@ -42,10 +47,11 @@ pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
   .await
   .unwrap();
 
-  let response: Vec<_> = expenses.into_iter()
+  let response: Vec<_> = expenses
+    .into_iter()
     .map(|e| Expense {
-        amount: e.amount as f64 / 100.0,
-        ..e
+      amount: e.amount as f64 / 100.0,
+      ..e
     })
     .collect();
 
@@ -71,15 +77,17 @@ pub async fn get_expense(
   .await
   .unwrap();
 
-
   let response = expense.map(|e| Expense {
     amount: e.amount as f64 / 100.0,
     ..e
   });
-  
+
   match response {
     Some(e) => HttpResponse::Ok().json(e),
-    None => HttpResponse::NotFound().finish(),
+    None => {
+      eprintln!("error: get failed for expense with id {}, expense not found", expense_id);
+      HttpResponse::NotFound().body(format!("error: get failed for expense with id {}, expense not found", expense_id))
+    }
   }
 }
 
@@ -112,12 +120,23 @@ pub async fn update_expense(
   .await;
 
   match result {
-    Ok(Some(expense)) => HttpResponse::Ok().json(expense),
-    Ok(None) => HttpResponse::NotFound()
-      .body(format!("expense with id {} not found", expense_id)),
+    Ok(Some(expense)) => {
+      let response = Expense {
+        amount: expense.amount as f64 / 100.0,
+        ..expense
+      };
+      HttpResponse::Ok().json(response)
+    }
+    Ok(None) => {
+      eprintln!("error: update failed for expense with id {}, expense not found", expense_id);
+      HttpResponse::NotFound().body(format!(
+        "error: update failed for expense with id {}, expense not found",
+        expense_id
+      ))
+    }
     Err(e) => {
-      eprintln!("failed to update expense: {}", e);
-      HttpResponse::InternalServerError().body("failed to update expense")
+      eprintln!("error: update failed for expense with id {}: {}", expense_id, e);
+      HttpResponse::InternalServerError().body(format!("error: update failed for expense with id {}: {}", expense_id, e))
     }
   }
 }
@@ -127,16 +146,20 @@ pub async fn delete_expense(
   id_path: web::Path<i32>,
 ) -> impl Responder {
   let expense_id = id_path.into_inner();
-  let result = sqlx::query!("delete from expenses where id = $1", expense_id)
-    .execute(pool.get_ref())
-    .await;
+  let result = sqlx::query!("delete from expenses where id = $1", expense_id).execute(pool.get_ref()).await;
 
   match result {
     Ok(r) if r.rows_affected() > 0 => HttpResponse::NoContent().finish(),
-    Ok(_) => HttpResponse::NotFound().body("expense not found"),
+    Ok(_) => {
+      eprintln!("error: delete failed for expense with id {}, expense not found", expense_id);
+      HttpResponse::NotFound().body(format!(
+        "error: delete failed for expense with id {}, expense not found",
+        expense_id
+      ))
+    }
     Err(e) => {
-      eprintln!("failed to delete expense: {:?}", e);
-      HttpResponse::InternalServerError().finish()
+      eprintln!("error: delete failed for expense with id {}: {}", expense_id, e);
+      HttpResponse::InternalServerError().body(format!("error: update failed for expense with id {}: {}", expense_id, e))
     }
   }
 }

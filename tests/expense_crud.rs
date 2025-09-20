@@ -10,7 +10,7 @@ async fn expense_crud() {
     .post("http://localhost:8080/expenses")
     .json(&json!({
         "date": "2025-08-03",
-        "amount": 12345,
+        "amount": 123.45,
         "category": "food",
         "message": "lunch",
         "image_url": null,
@@ -24,7 +24,7 @@ async fn expense_crud() {
 
   let expense: serde_json::Value = create_expense.json().await.unwrap();
   assert_eq!(expense["date"], "2025-08-03");
-  assert_eq!(expense["amount"], 123.45);
+  assert!((expense["amount"].as_f64().unwrap() - 123.45).abs() < 1e-6);
   assert_eq!(expense["category"], "food");
   assert_eq!(expense["message"], "lunch");
   assert!(expense["image_url"].is_null());
@@ -34,25 +34,20 @@ async fn expense_crud() {
   let expense_id = expense["id"].as_i64().unwrap();
 
   // get all expenses
-  let get_all =
-    client.get("http://localhost:8080/expenses").send().await.unwrap();
+  let get_all = client.get("http://localhost:8080/expenses").send().await.unwrap();
   assert!(get_all.status().is_success());
   let expenses: Vec<serde_json::Value> = get_all.json().await.unwrap();
   assert!(expenses.iter().any(|e| e["id"].as_i64().unwrap() == expense_id));
 
-  // get the expense
-  let get_expense = client
-    .get(&format!("http://localhost:8080/expenses/{}", expense_id))
-    .send()
-    .await
-    .unwrap();
+  // get expense
+  let get_expense = client.get(&format!("http://localhost:8080/expenses/{}", expense_id)).send().await.unwrap();
 
   assert!(get_expense.status().is_success());
 
   let fetched_expense: serde_json::Value = get_expense.json().await.unwrap();
   assert_eq!(fetched_expense["id"].as_i64().unwrap(), expense_id);
   assert_eq!(fetched_expense["category"], "food");
-  assert_eq!(fetched_expense["amount"].as_i64().unwrap(), 123.45);
+  assert!((expense["amount"].as_f64().unwrap() - 123.45).abs() < 1e-6);
   assert_eq!(fetched_expense["date"].as_str().unwrap(), "2025-08-03");
   assert_eq!(fetched_expense["message"].as_str().unwrap(), "lunch");
   assert!(fetched_expense["image_url"].is_null());
@@ -64,7 +59,7 @@ async fn expense_crud() {
     .put(&format!("http://localhost:8080/expenses/{}", expense_id))
     .json(&json!({
       "date": "2025-08-04",
-      "amount": 15000,
+      "amount": 150.00,
       "category": "dining",
       "message": "dinner",
       "image_url": null,
@@ -79,26 +74,18 @@ async fn expense_crud() {
 
   let updated_expense: serde_json::Value = update_expense.json().await.unwrap();
   assert_eq!(updated_expense["date"], "2025-08-04");
-  assert_eq!(updated_expense["amount"], 150.00);
+  assert!((updated_expense["amount"].as_f64().unwrap() - 150.00).abs() < 1e-6);
   assert_eq!(updated_expense["category"], "dining");
   assert_eq!(updated_expense["message"], "dinner");
   assert_eq!(updated_expense["longitude"], 9.1900);
   assert_eq!(updated_expense["latitude"], 45.4642);
 
   // delete expense
-  let delete_expense = client
-    .delete(&format!("http://localhost:8080/expenses/{}", expense_id))
-    .send()
-    .await
-    .unwrap();
+  let delete_expense = client.delete(&format!("http://localhost:8080/expenses/{}", expense_id)).send().await.unwrap();
 
   assert!(delete_expense.status().is_success());
 
-  let get_deleted_expense = client
-    .get(&format!("http://localhost:8080/expenses/{}", expense_id))
-    .send()
-    .await
-    .unwrap();
+  let get_deleted_expense = client.get(&format!("http://localhost:8080/expenses/{}", expense_id)).send().await.unwrap();
 
   assert_eq!(get_deleted_expense.status(), reqwest::StatusCode::NOT_FOUND);
 }
