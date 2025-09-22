@@ -1,3 +1,4 @@
+use crate::epprintln;
 use crate::models::{CreateExpense, Expense};
 use actix_web::{HttpResponse, Responder, web};
 use sqlx::PgPool;
@@ -85,7 +86,7 @@ pub async fn get_expense(
   match response {
     Some(e) => HttpResponse::Ok().json(e),
     None => {
-      eprintln!("error: get failed for expense with id {}, expense not found", expense_id);
+      epprintln!("error: get failed for expense with id {}, expense not found", expense_id);
       HttpResponse::NotFound().body(format!("error: get failed for expense with id {}, expense not found", expense_id))
     }
   }
@@ -128,14 +129,14 @@ pub async fn update_expense(
       HttpResponse::Ok().json(response)
     }
     Ok(None) => {
-      eprintln!("error: update failed for expense with id {}, expense not found", expense_id);
+      epprintln!("error: update failed for expense with id {}, expense not found", expense_id);
       HttpResponse::NotFound().body(format!(
         "error: update failed for expense with id {}, expense not found",
         expense_id
       ))
     }
     Err(e) => {
-      eprintln!("error: update failed for expense with id {}: {}", expense_id, e);
+      epprintln!("error: update failed for expense with id {}: {}", expense_id, e);
       HttpResponse::InternalServerError().body(format!("error: update failed for expense with id {}: {}", expense_id, e))
     }
   }
@@ -151,14 +152,14 @@ pub async fn delete_expense(
   match result {
     Ok(r) if r.rows_affected() > 0 => HttpResponse::NoContent().finish(),
     Ok(_) => {
-      eprintln!("error: delete failed for expense with id {}, expense not found", expense_id);
+      epprintln!("error: delete failed for expense with id {}, expense not found", expense_id);
       HttpResponse::NotFound().body(format!(
         "error: delete failed for expense with id {}, expense not found",
         expense_id
       ))
     }
     Err(e) => {
-      eprintln!("error: delete failed for expense with id {}: {}", expense_id, e);
+      epprintln!("error: delete failed for expense with id {}: {}", expense_id, e);
       HttpResponse::InternalServerError().body(format!("error: update failed for expense with id {}: {}", expense_id, e))
     }
   }

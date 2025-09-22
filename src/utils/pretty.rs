@@ -35,7 +35,7 @@ pub fn pretty(msg: &str) -> String {
   while let Some(c) = chars.next() {
     if c == '*' {
       bold = !bold;
-      continue; // skip the asterisk
+      continue;
     }
 
     if bold {
@@ -44,34 +44,19 @@ pub fn pretty(msg: &str) -> String {
       result.push(c);
     }
   }
-
-  let mut bold = false;
-  while let Some(c) = chars.next() {
-    if c == '*' {
-      bold = !bold;
-      continue; // skip the asterisk
-    }
-
-    if bold {
-      result.push_str(&c.to_string().bold().to_string());
-    } else {
-      result.push(c);
-    }
-  }
-
-  let mut bold = false;
-  while let Some(c) = chars.next() {
-    if c == '*' {
-      bold = !bold;
-      continue; // skip the asterisk
-    }
-
-    if bold {
-      result.push_str(&c.to_string().bold().to_string());
-    } else {
-      result.push(c);
-    }
-  }
-
   result
+}
+
+#[macro_export]
+macro_rules! pprintln {
+    ($($arg:tt)*) => {{
+        println!("{}", $crate::utils::pretty::pretty(&format!($($arg)*)));
+    }};
+}
+
+#[macro_export]
+macro_rules! epprintln {
+    ($($arg:tt)*) => {{
+        eprintln!("{}", $crate::utils::pretty::pretty(&format!($($arg)*)));
+    }};
 }
