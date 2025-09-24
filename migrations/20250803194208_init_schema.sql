@@ -5,6 +5,6 @@ create table expenses (
   category varchar(63) not null,
   message varchar(2047),
   image_url varchar(255),
-  longitude double precision not null,
-  latitude double precision not null
+  longitude double precision,
+  latitude double precision
 );

@@ -14,14 +14,15 @@ createdb -U francesco money
 create database money
 sqlx migrate run
 
-psql -U francesco -d postgres
-
 psql -U francesco -d money
 pgcli -U francesco -d money
 
 select * from expenses;
 truncate table expenses restart identity;
 
+
+
+psql -U francesco -d postgres
 drop database money;
 create database money;
 sqlx migrate run
@@ -59,9 +60,9 @@ curl -s -X PUT http://localhost:8080/expenses/1 \
     "image_url":null,
     "latitude":41.9028,
     "longitude":12.4964
-  }'| jq
+  }' | jq
 
-# delete expense)
+# delete expense
 curl -s -X DELETE http://localhost:8080/expenses/1 | jq
 ```
 
