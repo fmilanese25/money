@@ -164,3 +164,58 @@ pub async fn delete_expense(
     }
   }
 }
+
+pub async fn export_expenses_csv(pool: actix_web::web::Data<sqlx::PgPool>) -> impl Responder {
+    let expenses = sqlx::query_as!(
+        crate::models::Expense,
+        r#"
+        select id, date, amount, category, message, image_url, longitude, latitude from expenses
+        "#
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    .unwrap();
+
+    let mut wtr = csv::Writer::from_writer(vec![]);
+    for e in &expenses {
+        wtr.serialize(e).unwrap();
+    }
+    let data = wtr.into_inner().unwrap();
+
+    HttpResponse::Ok()
+        .content_type("text/csv")
+        .append_header(("Content-Disposition", "attachment; filename=expenses.csv"))
+        .body(data)
+}
+
+pub async fn export_expenses_md(pool: actix_web::web::Data<sqlx::PgPool>) -> impl Responder {
+    let expenses = sqlx::query_as!(
+        crate::models::Expense,
+        r#"
+        select id, date, amount, category, message, image_url, longitude, latitude from expenses
+        "#
+    )
+    .fetch_all(pool.get_ref())
+    .await
+    .unwrap();
+
+    let mut lines = vec![];
+    for e in expenses {
+        let line = format!(
+            "{}\t{}\t{:.2}\t{}\t{}\t{}\t{}",
+            e.id,
+            e.date,
+            e.amount,
+            e.category,
+            e.message.unwrap_or_default(),
+            e.latitude.map_or("".to_string(), |v| v.to_string()),
+            e.longitude.map_or("".to_string(), |v| v.to_string()),
+        );
+        lines.push(line);
+    }
+
+    HttpResponse::Ok()
+        .content_type("text/plain")
+        .append_header(("Content-Disposition", "attachment; filename=expenses.md"))
+        .body(lines.join("\n"))
+}

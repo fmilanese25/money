@@ -5,7 +5,7 @@ use serde_json::json;
 async fn expense_crud() {
   let client = Client::new();
 
-  // create expense
+  // create_expense
   let create_expense = client
     .post("http://localhost:8080/expenses")
     .json(&json!({
@@ -33,15 +33,14 @@ async fn expense_crud() {
 
   let expense_id = expense["id"].as_i64().unwrap();
 
-  // get all expenses
-  let get_all = client.get("http://localhost:8080/expenses").send().await.unwrap();
-  assert!(get_all.status().is_success());
-  let expenses: Vec<serde_json::Value> = get_all.json().await.unwrap();
+  // get_expenses
+  let get_expenses = client.get("http://localhost:8080/expenses").send().await.unwrap();
+  assert!(get_expenses.status().is_success());
+  let expenses: Vec<serde_json::Value> = get_expenses.json().await.unwrap();
   assert!(expenses.iter().any(|e| e["id"].as_i64().unwrap() == expense_id));
 
-  // get expense
+  // get_expense
   let get_expense = client.get(&format!("http://localhost:8080/expenses/{}", expense_id)).send().await.unwrap();
-
   assert!(get_expense.status().is_success());
 
   let fetched_expense: serde_json::Value = get_expense.json().await.unwrap();
@@ -54,7 +53,7 @@ async fn expense_crud() {
   assert_eq!(fetched_expense["longitude"].as_f64().unwrap(), 9.1900); // example
   assert_eq!(fetched_expense["latitude"].as_f64().unwrap(), 45.4642); // example
 
-  // update expense
+  // update_expense
   let update_expense = client
     .put(&format!("http://localhost:8080/expenses/{}", expense_id))
     .json(&json!({
@@ -80,12 +79,22 @@ async fn expense_crud() {
   assert_eq!(updated_expense["longitude"], 9.1900);
   assert_eq!(updated_expense["latitude"], 45.4642);
 
-  // delete expense
+  // delete_expense
   let delete_expense = client.delete(&format!("http://localhost:8080/expenses/{}", expense_id)).send().await.unwrap();
-
   assert!(delete_expense.status().is_success());
 
   let get_deleted_expense = client.get(&format!("http://localhost:8080/expenses/{}", expense_id)).send().await.unwrap();
-
   assert_eq!(get_deleted_expense.status(), reqwest::StatusCode::NOT_FOUND);
+
+  // export_expenses_csv
+  let csv_resp = client.get("http://localhost:8080/expenses/csv").send().await.unwrap();
+  assert!(csv_resp.status().is_success());
+  let csv_text = csv_resp.text().await.unwrap();
+  assert!(csv_text.contains("date"));
+
+  // export_expenses_md
+  let txt_resp = client.get("http://localhost:8080/expenses/txt").send().await.unwrap();
+  assert!(txt_resp.status().is_success());
+  let txt_text = txt_resp.text().await.unwrap();
+  assert!(txt_text.contains("date"));
 }
