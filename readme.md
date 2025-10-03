@@ -8,22 +8,20 @@ cargo run
 
 ## db
 ```sh
+# start_db
 sudo service postgresql start
 
-createdb -U francesco money
-create database money
-sqlx migrate run
-
-psql -U francesco -d money
-pgcli -U francesco -d money
-
-select * from expenses;
-truncate table expenses restart identity;
-
+# reset_db
 psql -U francesco -d postgres
 drop database money;
 create database money;
 sqlx migrate run
+
+# query_db
+psql -U francesco -d money
+
+select * from expenses;
+truncate table expenses restart identity;
 ```
 
 ## curl -s tests

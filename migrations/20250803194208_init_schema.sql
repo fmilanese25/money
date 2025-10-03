@@ -1,6 +1,6 @@
 create table expenses (
   id serial primary key,
-  date date not null,
+  date timestamp not null,
   amount integer not null,
   category varchar(63) not null,
   message varchar(2047),

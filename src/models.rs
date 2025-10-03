@@ -1,10 +1,10 @@
-use chrono::NaiveDate;
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, sqlx::FromRow)]
 pub struct Expense {
   pub id: i32,
-  pub date: NaiveDate,
+  pub date: NaiveDateTime,
   pub amount: f64,
   pub category: String,
   pub message: Option<String>,
@@ -15,7 +15,7 @@ pub struct Expense {
 
 #[derive(Deserialize)]
 pub struct CreateExpense {
-  pub date: NaiveDate,
+  pub date: NaiveDateTime,
   pub amount: f64,
   pub category: String,
   pub message: Option<String>,
