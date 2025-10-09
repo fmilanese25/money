@@ -30,7 +30,7 @@ truncate table expenses restart identity;
 curl -s -X POST http://localhost:8080/expenses \
   -H "Content-Type: application/json" \
   -d '{
-    "date":"2025-08-03",
+    "date": "2025-08-03T12:34:56",
     "amount":123.45,
     "category":"food",
     "message":"lunch",
@@ -49,7 +49,7 @@ curl -s http://localhost:8080/expenses/1 | jq
 curl -s -X PUT http://localhost:8080/expenses/1 \
   -H "Content-Type: application/json" \
   -d '{
-    "date":"2025-08-04",
+    "date": "2025-08-03T12:34:56",
     "amount":150.00,
     "category":"dining",
     "message":"dinner",
