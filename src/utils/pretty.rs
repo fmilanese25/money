@@ -25,7 +25,8 @@ pub fn pretty(msg: &str) -> String {
       chars.next();
     }
   } else if msg.starts_with("     Running at") {
-    result.push_str(&"     Running at".green().bold().to_string());
+    result.push_str(&"     Running".green().bold().to_string());
+    result.push_str(" at");
     for _ in 0.."     Running at".len() {
       chars.next();
     }
