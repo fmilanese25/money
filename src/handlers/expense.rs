@@ -12,17 +12,17 @@ pub async fn create_expense(
   let expense = sqlx::query_as!(
     Expense,
     r#"
-    insert into expenses (date, amount, category, message, image_url, longitude, latitude)
+    insert into expenses (date, amount, category, image_url, longitude, latitude, message)
     values ($1, $2, $3, $4, $5, $6, $7)
-    returning id, date, amount, category, message, image_url, longitude, latitude
+    returning id, date, amount, category, image_url, longitude, latitude, message
     "#,
     payload.date,
     amount_cents,
     payload.category,
-    payload.message,
     payload.image_url,
     payload.longitude,
     payload.latitude,
+    payload.message,
   )
   .fetch_one(pool.get_ref())
   .await
@@ -40,7 +40,7 @@ pub async fn get_expenses(pool: web::Data<PgPool>) -> impl Responder {
   let expenses = sqlx::query_as!(
     Expense,
     r#"
-    select id, date, amount, category, message, image_url, longitude, latitude
+    select id, date, amount, category, image_url, longitude, latitude, message
     from expenses
     "#
   )
@@ -68,7 +68,7 @@ pub async fn get_expense(
   let expense = sqlx::query_as!(
     Expense,
     r#"
-    select id, date, amount, category, message, image_url, longitude, latitude
+    select id, date, amount, category, image_url, longitude, latitude, message
     from expenses 
     where id = $1
     "#,
@@ -104,18 +104,18 @@ pub async fn update_expense(
     Expense,
     r#"
     update expenses 
-    set date = $2, amount = $3, category = $4, message = $5, image_url = $6, longitude = $7, latitude = $8
+    set date = $2, amount = $3, category = $4, image_url = $5, longitude = $6, latitude = $7, message = $8
     where id = $1
-    returning id, date, amount, category, message, image_url, longitude, latitude
+    returning id, date, amount, category, image_url, longitude, latitude, message
     "#,
     expense_id,
     payload.date,
     amount_cents,
     payload.category,
-    payload.message,
     payload.image_url,
     payload.longitude,
     payload.latitude,
+    payload.message,
   )
   .fetch_optional(pool.get_ref())
   .await;
@@ -160,7 +160,7 @@ pub async fn delete_expense(
     }
     Err(e) => {
       epprintln!("error: delete failed for expense with id {}: {}", expense_id, e);
-      HttpResponse::InternalServerError().body(format!("error: update failed for expense with id {}: {}", expense_id, e))
+      HttpResponse::InternalServerError().body(format!("error: delete failed for expense with id {}: {}", expense_id, e))
     }
   }
 }
@@ -169,7 +169,8 @@ pub async fn export_expenses_csv(pool: actix_web::web::Data<sqlx::PgPool>) -> im
   let expenses = sqlx::query_as!(
     crate::models::Expense,
     r#"
-    select id, date, amount, category, message, image_url, longitude, latitude from expenses
+    select id, date, amount, category, image_url, longitude, latitude, message
+    from expenses
     "#
   )
   .fetch_all(pool.get_ref())
@@ -187,10 +188,11 @@ pub async fn export_expenses_csv(pool: actix_web::web::Data<sqlx::PgPool>) -> im
 
 pub async fn export_expenses_md(pool: actix_web::web::Data<sqlx::PgPool>) -> impl Responder {
   let expenses = sqlx::query_as!(
-    crate::models::Expense,
+    Expense,
     r#"
-        select id, date, amount, category, message, image_url, longitude, latitude from expenses
-        "#
+    select id, date, amount, category, image_url, longitude, latitude, message
+    from expenses
+    "#
   )
   .fetch_all(pool.get_ref())
   .await
@@ -211,7 +213,7 @@ pub async fn export_expenses_md(pool: actix_web::web::Data<sqlx::PgPool>) -> imp
     };
 
     let line = format!(
-      "{:>5}   {:>19}   {:>8.2}   {:>10}   {:>23}   {:>20}",
+      "{:>5}   {:>19}   {:>8.2}   {:>10}   {:>23}   {}",
       e.id,
       e.date,
       e.amount,

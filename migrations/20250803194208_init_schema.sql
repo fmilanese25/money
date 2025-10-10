@@ -3,8 +3,8 @@ create table expenses (
   date timestamp not null,
   amount integer not null,
   category varchar(63) not null,
-  message varchar(2047),
   image_url varchar(255),
   longitude double precision,
-  latitude double precision
+  latitude double precision,
+  message varchar(2047)
 );

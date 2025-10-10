@@ -12,10 +12,10 @@ async fn expense_crud() {
         "date": "2025-08-03T12:34:56",
         "amount": 123.45,
         "category": "food",
-        "message": "lunch",
         "image_url": null,
         "longitude": 9.19,
-        "latitude": 45.4642
+        "latitude": 45.4642,
+        "message": "lunch"
     }))
     .send()
     .await
@@ -26,10 +26,10 @@ async fn expense_crud() {
   assert_eq!(expense["date"], "2025-08-03T12:34:56");
   assert!((expense["amount"].as_f64().unwrap() - 123.45).abs() < 1e-6);
   assert_eq!(expense["category"], "food");
-  assert_eq!(expense["message"], "lunch");
   assert!(expense["image_url"].is_null());
   assert_eq!(expense["longitude"].as_f64().unwrap(), 9.19);
   assert_eq!(expense["latitude"].as_f64().unwrap(), 45.4642);
+  assert_eq!(expense["message"], "lunch");
 
   let expense_id = expense["id"].as_i64().unwrap();
 
@@ -48,10 +48,10 @@ async fn expense_crud() {
   assert_eq!(fetched_expense["category"], "food");
   assert!((expense["amount"].as_f64().unwrap() - 123.45).abs() < 1e-6);
   assert_eq!(fetched_expense["date"].as_str().unwrap(), "2025-08-03T12:34:56");
-  assert_eq!(fetched_expense["message"].as_str().unwrap(), "lunch");
   assert!(fetched_expense["image_url"].is_null());
   assert_eq!(fetched_expense["longitude"].as_f64().unwrap(), 9.1900); // example
   assert_eq!(fetched_expense["latitude"].as_f64().unwrap(), 45.4642); // example
+  assert_eq!(fetched_expense["message"].as_str().unwrap(), "lunch");
 
   // update_expense
   let update_expense = client
@@ -60,10 +60,10 @@ async fn expense_crud() {
       "date": "2025-08-04T12:34:56",
       "amount": 150.00,
       "category": "dining",
-      "message": "dinner",
       "image_url": null,
       "longitude": 9.1900,
-      "latitude": 45.4642
+      "latitude": 45.4642,
+      "message": "dinner"
     }))
     .send()
     .await
@@ -75,9 +75,9 @@ async fn expense_crud() {
   assert_eq!(updated_expense["date"], "2025-08-04T12:34:56");
   assert!((updated_expense["amount"].as_f64().unwrap() - 150.00).abs() < 1e-6);
   assert_eq!(updated_expense["category"], "dining");
-  assert_eq!(updated_expense["message"], "dinner");
   assert_eq!(updated_expense["longitude"], 9.1900);
   assert_eq!(updated_expense["latitude"], 45.4642);
+  assert_eq!(updated_expense["message"], "dinner");
 
   // delete_expense
   let delete_expense = client.delete(&format!("http://localhost:8080/expenses/{}", expense_id)).send().await.unwrap();

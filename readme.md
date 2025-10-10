@@ -33,10 +33,10 @@ curl -s -X POST http://localhost:8080/expenses \
     "date": "2025-08-03T12:34:56",
     "amount":123.45,
     "category":"food",
-    "message":"lunch",
     "image_url":null,
     "latitude":41.9028,
-    "longitude":12.4964
+    "longitude":12.4964,
+    "message":"lunch"
   }' | jq
 
 # get_expenses  
@@ -52,10 +52,10 @@ curl -s -X PUT http://localhost:8080/expenses/1 \
     "date": "2025-08-03T12:34:56",
     "amount":150.00,
     "category":"dining",
-    "message":"dinner",
     "image_url":null,
     "latitude":41.9028,
-    "longitude":12.4964
+    "longitude":12.4964,
+    "message":"dinner"
   }' | jq
 
 # delete_expense
@@ -64,6 +64,9 @@ curl -s -X DELETE http://localhost:8080/expenses/1 | jq
 # export_expenses_csv
 curl -s http://localhost:8080/expenses/csv | cat
 curl -s http://localhost:8080/expenses/csv -o expenses.csv
+
+# import_expenses_csv
+curl -X POST -F "file=@expenses.csv" http://localhost:8080/expenses/csv
 
 # export_expenses_md
 curl -s http://localhost:8080/expenses/md | cat
