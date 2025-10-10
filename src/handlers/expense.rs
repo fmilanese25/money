@@ -1,7 +1,11 @@
 use crate::epprintln;
 use crate::models::{CreateExpense, Expense};
+use actix_multipart::Multipart;
 use actix_web::{HttpResponse, Responder, web};
+use csv::ReaderBuilder;
+use futures_util::TryStreamExt;
 use sqlx::PgPool;
+use std::io::Cursor;
 
 pub async fn create_expense(
   pool: web::Data<PgPool>,
@@ -167,7 +171,7 @@ pub async fn delete_expense(
 
 pub async fn export_expenses_csv(pool: actix_web::web::Data<sqlx::PgPool>) -> impl Responder {
   let expenses = sqlx::query_as!(
-    crate::models::Expense,
+    Expense,
     r#"
     select id, date, amount, category, image_url, longitude, latitude, message
     from expenses
@@ -184,6 +188,58 @@ pub async fn export_expenses_csv(pool: actix_web::web::Data<sqlx::PgPool>) -> im
   let data = wtr.into_inner().unwrap();
 
   HttpResponse::Ok().content_type("text/csv").append_header(("Content-Disposition", "attachment; filename=expenses.csv")).body(data)
+}
+pub async fn import_expenses_csv(
+  pool: web::Data<sqlx::PgPool>,
+  mut payload: Multipart,
+) -> impl Responder {
+  let mut imported = 0u32;
+
+  while let Ok(Some(mut field)) = payload.try_next().await {
+    let mut buffer = Vec::new();
+
+    while let Ok(Some(chunk)) = field.try_next().await {
+      buffer.extend_from_slice(&chunk);
+    }
+
+    let mut reader = ReaderBuilder::new().has_headers(true).from_reader(Cursor::new(buffer));
+
+    for result in reader.deserialize::<Expense>() {
+      if let Ok(expense) = result {
+        let amount_cents: i32 = (expense.amount * 100.0).round() as i32;
+        let res = sqlx::query!(
+          r#"
+          insert into expenses (id, date, amount, category, image_url, longitude, latitude, message)
+          values ($1, $2, $3, $4, $5, $6, $7, $8)
+          on conflict (id) do nothing
+          "#,
+          expense.id,
+          expense.date,
+          amount_cents,
+          expense.category,
+          expense.image_url,
+          expense.longitude,
+          expense.latitude,
+          expense.message
+        )
+        .execute(pool.get_ref())
+        .await;
+
+        match res {
+          Ok(_) => {
+            println!(
+              "note: create expense success  id {}   date {:?}   amount {:?}   category={:?}",
+              expense.id, expense.date, expense.amount, expense.category
+            );
+            imported += 1;
+          }
+          Err(err) => eprintln!("error: create expense failed {}", err),
+        }
+      }
+    }
+  }
+
+  HttpResponse::Ok().body(format!("note: created {} expenses", imported))
 }
 
 pub async fn export_expenses_md(pool: actix_web::web::Data<sqlx::PgPool>) -> impl Responder {
